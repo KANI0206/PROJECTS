@@ -1,0 +1,69 @@
+#include <LiquidCrystal.h>
+#define tempsensor A0
+int led = 13;
+int sensor = 6; //PIR sensor
+int state = LOW;
+int val = 0;
+int buzzer=7;
+byte degree[8] =
+{
+0b00011, //To display the degree symbol on LCD
+0b00011,
+0b00000,
+0b00000,
+0b00000,
+0b00000,
+0b00000,
+0b00000
+};
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+String ssid = "Simulator Wifi"; // SSID to connect toString password = ""; // Our virtual wifi has no password
+String host = "api.thingspeak.com"; // Open Weather Map API
+const int httpPort = 80;
+const int httpPort2 = 82;
+String uri ="/update?api_key=05ZAWQYEQXF004T1&field1=";
+String uripir ="/update?api_key=05ZAWQYEQXF004T1&field2=";
+int setupESP8266(void) {
+// Start our ESP8266 Serial Communication
+Serial.begin(115200); // Serial connection over USB to computer
+Serial.println("AT"); // Serial connection on Tx / Rx port to
+ESP8266
+delay(10); // Wait a little for the ESP to respond
+if (!Serial.find("OK")) return 1;
+// Connect to 123D Circuits Simulator Wifi
+Serial.println("AT+CWJAP=\"" + ssid + "\",\"" + password + \"");
+delay(10); // Wait a little for the ESP to respond
+if (!Serial.find("OK")) return 2;
+// Open TCP connection to the host:
+Serial.println("AT+CIPSTART=\"TCP\",\"" + host + "\"," +httpPort);
+delay(50); // Wait a little for the ESP to respond
+if (!Serial.find("OK")) return 3;
+return 0;
+}
+void anydata(void) {
+int temp = analogRead(A0); // read temperature sensor value
+int temp2=temp/2.048;
+float temperature=map(temp2,20,358,-40,125);
+int val = digitalRead(sensor); // read PIR sensor value
+if (val == HIGH) {
+int pirplot=map(val,0,1,0,1);
+}
+if (val == LOW) {
+int pirplot=map(val,0,1,0,1);
+}
+// Construct our HTTP call
+String httpPacket = "GET " + uri + float(temperature) + uripir + int(val) +"
+HTTP/1.1\r\nHost: " + host + "\r\n\r\n";
+int length = httpPacket.length();
+// Send our message length
+Serial.print("AT+CIPSEND=");
+Serial.println(length);
+delay(10); // Wait a little for the ESP to respond if
+(!Serial.find(">")) return -1;
+// Send our http request
+Serial.print(httpPacket);
+delay(10); // Wait a little for the ESP to respond
+if (!Serial.find("SEND OK\r\n"))
+return;
+}
